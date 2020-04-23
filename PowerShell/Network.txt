@@ -1,0 +1,11 @@
+<# Create Resource Group #>
+New-AzResourceGroup -Name 'rsg-LinuxVNET' -Location 'UKSouth'
+
+<# Create VNET #>
+$LinuxVNET = New-AzVirtualNetwork -ResourceGroupName 'rsg-LinuxVNET' -Location 'UKSouth' -Name 'VNET-Linux' -AddressPrefix 10.0.0.0/16
+
+<# Create SubNET #>
+$LinuxSubnet = Add-AzVirtualNetworkSubnetConfig -Name 'SNET-Linux-1' -AddressPrefix 10.0.0.0/17 -VirtualNetwork $LinuxVNET
+
+<# Attached Subnet to VNET #>
+$LinuxSubnet | Set-AzVirtualNetwork

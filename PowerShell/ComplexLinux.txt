@@ -1,0 +1,37 @@
+<# Create Resource Group #>
+New-AzResourceGroup -Name 'rsg-LinuxVms' -Location 'UKSouth'
+
+<# Create Login Creds #>
+$securePassword = ConvertTo-SecureString 'Password123!' -AsPlainText -Force
+$cred = New-Object System.Management.Automation.PSCredentials('azureuser', $securePassword)
+
+<# Get Existing VNET & Subnet #>
+$vnet = Get-AzVirtualNetwork -Name 'VNET-Linux'
+$subnet = Get-AzVirtualNetworkSubnetConfig -Name 'SNET-Linux-1' -VirtualNetwork $vnet
+
+<# Create Public IP #>
+$pip = New-AzPublicIpAddress -ResourceGroupName 'rsg-LinuxVms' -Location 'UKSouth' -Name 'cloudguru-linux-pip' -AllocationMethod Dynamic
+
+<# Create Network Security Group Rule #>
+$nsgRuleSSH = New-AzNetworkSecurityRuleConfig -Name 'SSH' -Protocol 'Tcp' -Direction 'Inbound' -Priority 1000 -SourceAddressPrefix * -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange 22 -Access 'Allow'
+
+<# Create Network Security Group  #>
+$nsg = New-AzNetworkSecurityGroup -ResourceGroupName 'rsg-LinuxVms' -Location 'UKSouth' -Name 'cloudguru-linux-nsg' -SecurityRules $nsgRuleSSH
+
+<# Create NIC  #>
+$nic = New-AzNetworkInterface -Name 'cloudguru-linux-nic1' -ResourceGroupName 'rsg-LinuxVms' -Location 'UKSouth' -SubnetId $subnet.Id -PublicIpAddressId $pip.Id -NetworkSecurityGroupId $nsg.Id
+
+<# Setup Vm Config  #>
+$vmConfig = New-AzVmConfig -VMName 'cloudguru-linux' -VMSize Standard_B1s
+
+<# Set Vm OS  #>
+Set-AzVmOperatingSystem -Linux -ComputerName 'cloudguru-linux' -Credential $cred -VM $vmConfig
+
+<# Set VM Image to use  #>
+Set-AzVmSourceImage -PublisherName 'Canonical' -Offer 'UbuntuServer' -Skus '16.04-LTS' -Version 'latest' -VM $vmConfig
+
+<# Add nic to VM  #>
+Add-AzVMNetworkInterface -Id $nic.Id -VM $vmConfig
+
+<# Create VM  #>
+New-AzVM -ResourceGroupName 'rsg-LinuxVms' -Location 'UKSouth' -VM $vmConfig

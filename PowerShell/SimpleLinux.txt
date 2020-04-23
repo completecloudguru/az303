@@ -1,0 +1,9 @@
+<# Create Resource Group #>
+New-AzResourceGroup -Name 'rsg-LinuxVms' -Location 'UKSouth'
+
+<# Create Login Creds #>
+$securePassword = ConvertTo-SecureString 'Password123!' -AsPlainText -Force
+$cred = New-Object System.Management.Automation.PSCredential('azureuser', $securePassword)
+
+<# Create VM #>
+New-AzVM -ResourceGroupName 'rsg-LinuxVMs' -Name 'cloudguru-simplelinux' -Image 'UbuntuLTS' -VirtualNetworkName 'VNET-Linux' -SubnetName 'LinuxVMs' -PublicIpAddressName 'clouguru-implelinux-pip' -Credential $cred -OpenPorts 22
